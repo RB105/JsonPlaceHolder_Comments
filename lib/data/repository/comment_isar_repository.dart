@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:comments/data/model/comments_model.dart';
 import 'package:comments/data/service/comments_service.dart';
@@ -11,9 +12,19 @@ class CommentsRepository {
   // instance
   CommentsService commentsService = CommentsService();
 
-  Future<dynamic> getComments() async {
+  Future<dynamic> getComments()async{
+    db = await openIsar();
+    if (await db.commentsModels.count() == 0) {
+      return getRemote();
+    } else {
+      return await db.commentsModels.where().findAll();
+    }
+  }
+
+  Future<dynamic> getRemote() async {
     return await commentsService.getComments().then((dynamic response)async {
       if (response is List<CommentsModel>) {
+        print(response);
       await openIsar();
       await writeToDatabase(response);
       return db.commentsModels.where().findAll();
@@ -34,7 +45,7 @@ class CommentsRepository {
 
   Future<void> writeToDatabase(List<CommentsModel> data)async{
     db.writeTxn(() async{
-      await db.clear();
+      await db.commentsModels.clear();
       await db.commentsModels.putAll(data); 
     });
   }
